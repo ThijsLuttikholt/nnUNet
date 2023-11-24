@@ -25,7 +25,7 @@ from batchgenerators.utilities.file_and_folder_operations import join, isdir
 from nnunet.utilities.task_name_id_conversion import convert_id_to_task_name
 
 
-def helper():
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", '--input_folder', help="Must contain all modalities for each patient in the correct"
                                                      " order (same as training). Files must be named "
@@ -133,14 +133,14 @@ def helper():
     fullTimes = np.zeros((numTimes,7))
 
     for i in range(numTimes):
-        fullTimes[i] = main(args)
+        fullTimes[i] = sideFunc(args)
 
     myData = pd.DataFrame(fullTimes)
     filePath = '/data/diag/thijsLuttikholt/nnUnet_speed_work/speed_measures.xlsx'
     myData.to_excel(filePath, index=False)
     
 
-def main(args):
+def sideFunc(args):
     allTimes = np.zeros(7)
     startTime = time.time()
     input_folder = args.input_folder
