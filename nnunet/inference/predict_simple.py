@@ -125,11 +125,11 @@ def helper():
                              'the required vram. If you want to disable mixed precision you can set this flag. Note '
                              'that this is not recommended (mixed precision is ~2x faster!)')
     
-    parser.add_argument('--numtimes', type=int, required=False, default=4)
+    parser.add_argument('--numtimes', type=str, required=False, default='4')
 
     args = parser.parse_args()
 
-    numTimes = args.numtimes
+    numTimes = int(args.numtimes)
     fullTimes = np.zeros((numTimes,7))
 
     for i in range(numTimes):
