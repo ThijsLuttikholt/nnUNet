@@ -15,6 +15,9 @@
 
 import argparse
 import torch
+import time
+import numpy as np
+import pandas as pd
 
 from nnunet.inference.predict import predict_from_folder
 from nnunet.paths import default_plans_identifier, network_training_output_dir, default_cascade_trainer, default_trainer
@@ -22,7 +25,7 @@ from batchgenerators.utilities.file_and_folder_operations import join, isdir
 from nnunet.utilities.task_name_id_conversion import convert_id_to_task_name
 
 
-def main():
+def helper():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", '--input_folder', help="Must contain all modalities for each patient in the correct"
                                                      " order (same as training). Files must be named "
@@ -121,8 +124,25 @@ def main():
                         help='Predictions are done with mixed precision by default. This improves speed and reduces '
                              'the required vram. If you want to disable mixed precision you can set this flag. Note '
                              'that this is not recommended (mixed precision is ~2x faster!)')
+    
+    parser.add_argument('--numtimes', type=int, required=False, default=4)
 
     args = parser.parse_args()
+
+    numTimes = args.numtimes
+    fullTimes = np.zeros((numTimes,7))
+
+    for i in range(numTimes):
+        fullTimes[i] = main(args)
+
+    myData = pd.DataFrame(fullTimes)
+    filePath = '/data/diag/thijsLuttikholt/nnUnet_speed_work/speed_measures.xlsx'
+    myData.to_excel(filePath, index=False)
+    
+
+def main(args):
+    allTimes = np.zeros(7)
+    startTime = time.time()
     input_folder = args.input_folder
     output_folder = args.output_folder
     part_id = args.part_id
@@ -214,12 +234,20 @@ def main():
     print("using model stored in ", model_folder_name)
     assert isdir(model_folder_name), "model output folder not found. Expected: %s" % model_folder_name
 
-    predict_from_folder(model_folder_name, input_folder, output_folder, folds, save_npz, num_threads_preprocessing,
+    endTime1 = time.time()
+    allTimes[0] = endTime1 - startTime
+
+    otherTimes = predict_from_folder(model_folder_name, input_folder, output_folder, folds, save_npz, num_threads_preprocessing,
                         num_threads_nifti_save, lowres_segmentations, part_id, num_parts, not disable_tta,
                         overwrite_existing=overwrite_existing, mode=mode, overwrite_all_in_gpu=all_in_gpu,
                         mixed_precision=not args.disable_mixed_precision,
                         step_size=step_size, checkpoint_name=args.chk)
-
+    
+    allTimes[1:] = otherTimes
+    for time_index,time_value in enumerate(allTimes):
+        print(f'Time measure number {time_index} was: {time_value} seconds')
+    
+    return allTimes
 
 if __name__ == "__main__":
-    main()
+    helper()

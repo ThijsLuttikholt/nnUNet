@@ -16,6 +16,7 @@
 import argparse
 from copy import deepcopy
 from typing import Tuple, Union, List
+import time
 
 import numpy as np
 from batchgenerators.augmentations.utils import resize_segmentation
@@ -152,11 +153,14 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
     :return:
     """
     assert len(list_of_lists) == len(output_filenames)
+
+    allTimes = np.zeros(5)
     if segs_from_prev_stage is not None: assert len(segs_from_prev_stage) == len(output_filenames)
 
     pool = Pool(num_threads_nifti_save)
     results = []
 
+    start1 = time.time()
     cleaned_output_files = []
     for o in output_filenames:
         dr, f = os.path.split(o)
@@ -179,9 +183,12 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
 
         print("number of cases that still need to be predicted:", len(cleaned_output_files))
 
+    end1 = time.time()
+    allTimes[0] = end1-start1
     print("emptying cuda cache")
     torch.cuda.empty_cache()
 
+    start2 = time.time()
     print("loading parameters for folds,", folds)
     trainer, params = load_model_and_checkpoint_files(model, folds, mixed_precision=mixed_precision,
                                                       checkpoint_name=checkpoint_name)
@@ -200,9 +207,18 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
         interpolation_order = segmentation_export_kwargs['interpolation_order']
         interpolation_order_z = segmentation_export_kwargs['interpolation_order_z']
 
+    end2 = time.time()
+    allTimes[1] = end2-start2
+
+    start3 = time.time()
     print("starting preprocessing generator")
     preprocessing = preprocess_multithreaded(trainer, list_of_lists, cleaned_output_files, num_threads_preprocessing,
                                              segs_from_prev_stage)
+    
+    end3 = time.time()
+    allTimes[2] = end3-start3
+
+    start4 = time.time()
     print("starting prediction...")
     all_output_files = []
     for preprocessed in preprocessing:
@@ -276,6 +292,10 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
                                                 npz_file, None, force_separate_z, interpolation_order_z),)
                                               ))
 
+    end4 = time.time()
+    allTimes[3] = end4-start4
+
+    start5 = time.time()
     print("inference done. Now waiting for the segmentation export to finish...")
     _ = [i.get() for i in results]
     # now apply postprocessing
@@ -301,6 +321,10 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
 
     pool.close()
     pool.join()
+
+    end5 = time.time()
+    allTimes[4] = end5-start5
+    return allTimes
 
 
 def predict_cases_fast(model, list_of_lists, output_filenames, folds, num_threads_preprocessing,
@@ -637,6 +661,8 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
     :param overwrite_existing: if not None then it will be overwritten with whatever is in there. None is default (no overwrite)
     :return:
     """
+    otherTimes = np.zeros(6)
+    startTime = time.time()
     maybe_mkdir_p(output_folder)
     shutil_sol.copyfile(join(model, 'plans.pkl'), output_folder)
 
@@ -665,14 +691,19 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
             all_in_gpu = False
         else:
             all_in_gpu = overwrite_all_in_gpu
+        endTime = time.time()
+        otherTimes[0] = endTime - startTime
 
-        return predict_cases(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
+        newTimes = predict_cases(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
                              save_npz, num_threads_preprocessing, num_threads_nifti_save, lowres_segmentations, tta,
                              mixed_precision=mixed_precision, overwrite_existing=overwrite_existing,
                              all_in_gpu=all_in_gpu,
                              step_size=step_size, checkpoint_name=checkpoint_name,
                              segmentation_export_kwargs=segmentation_export_kwargs,
                              disable_postprocessing=disable_postprocessing)
+        otherTimes[1:] = newTimes
+        return otherTimes
+
     elif mode == "fast":
         if overwrite_all_in_gpu is None:
             all_in_gpu = False
@@ -680,7 +711,7 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
             all_in_gpu = overwrite_all_in_gpu
 
         assert save_npz is False
-        return predict_cases_fast(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
+        return [], predict_cases_fast(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
                                   num_threads_preprocessing, num_threads_nifti_save, lowres_segmentations,
                                   tta, mixed_precision=mixed_precision, overwrite_existing=overwrite_existing,
                                   all_in_gpu=all_in_gpu,
@@ -694,7 +725,7 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
             all_in_gpu = overwrite_all_in_gpu
 
         assert save_npz is False
-        return predict_cases_fastest(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
+        return [], predict_cases_fastest(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
                                      num_threads_preprocessing, num_threads_nifti_save, lowres_segmentations,
                                      tta, mixed_precision=mixed_precision, overwrite_existing=overwrite_existing,
                                      all_in_gpu=all_in_gpu,
