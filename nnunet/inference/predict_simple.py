@@ -157,7 +157,7 @@ def sideFunc(args):
     # interp_order = args.interp_order
     # interp_order_z = args.interp_order_z
     # force_separate_z = args.force_separate_z
-    overwrite_existing = args.overwrite_existing
+    overwrite_existing = True #args.overwrite_existing
     mode = args.mode
     all_in_gpu = args.all_in_gpu
     model = args.model
@@ -250,4 +250,4 @@ def sideFunc(args):
     return allTimes
 
 if __name__ == "__main__":
-    helper()
+    main()
