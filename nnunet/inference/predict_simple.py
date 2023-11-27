@@ -130,11 +130,16 @@ def main():
     args = parser.parse_args()
 
     numTimes = int(args.numtimes)
-    fullTimes = np.zeros((numTimes,7))
+    fullTimes = np.zeros((numTimes,7+1))
+    
+
 
     for i in range(numTimes):
-        fullTimes[i] = sideFunc(args)
-
+        fullStart = time.time()
+        fullTimes[i,1:] = sideFunc(args)
+        fullEnd = time.time()
+        fullTimes[i,0] = fullEnd - fullStart
+    
     myData = pd.DataFrame(fullTimes)
     filePath = '/data/diag/thijsLuttikholt/nnUnet_speed_work/speed_measures.xlsx'
     myData.to_excel(filePath, index=False)
