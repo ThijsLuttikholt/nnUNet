@@ -135,9 +135,9 @@ def main():
 
 
     for i in range(numTimes):
-        fullStart = time.time()
+        fullStart = time.process_time()
         fullTimes[i,1:] = sideFunc(args)
-        fullEnd = time.time()
+        fullEnd = time.process_time()
         fullTimes[i,0] = fullEnd - fullStart
     
     myData = pd.DataFrame(fullTimes)
@@ -147,7 +147,7 @@ def main():
 
 def sideFunc(args):
     allTimes = np.zeros(7)
-    startTime = time.time()
+    startTime = time.process_time()
     input_folder = args.input_folder
     output_folder = args.output_folder
     part_id = args.part_id
@@ -239,7 +239,7 @@ def sideFunc(args):
     print("using model stored in ", model_folder_name)
     assert isdir(model_folder_name), "model output folder not found. Expected: %s" % model_folder_name
 
-    endTime1 = time.time()
+    endTime1 = time.process_time()
     allTimes[0] = endTime1 - startTime
 
     otherTimes = predict_from_folder(model_folder_name, input_folder, output_folder, folds, save_npz, num_threads_preprocessing,

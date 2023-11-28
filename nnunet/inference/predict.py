@@ -160,7 +160,7 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
     pool = Pool(num_threads_nifti_save)
     results = []
 
-    start1 = time.time()
+    start1 = time.process_time()
     cleaned_output_files = []
     for o in output_filenames:
         dr, f = os.path.split(o)
@@ -183,12 +183,12 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
 
         print("number of cases that still need to be predicted:", len(cleaned_output_files))
 
-    end1 = time.time()
+    end1 = time.process_time()
     allTimes[0] = end1-start1
     print("emptying cuda cache")
     torch.cuda.empty_cache()
 
-    start2 = time.time()
+    start2 = time.process_time()
     print("loading parameters for folds,", folds)
     trainer, params = load_model_and_checkpoint_files(model, folds, mixed_precision=mixed_precision,
                                                       checkpoint_name=checkpoint_name)
@@ -207,18 +207,18 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
         interpolation_order = segmentation_export_kwargs['interpolation_order']
         interpolation_order_z = segmentation_export_kwargs['interpolation_order_z']
 
-    end2 = time.time()
+    end2 = time.process_time()
     allTimes[1] = end2-start2
 
-    start3 = time.time()
+    start3 = time.process_time()
     print("starting preprocessing generator")
     preprocessing = preprocess_multithreaded(trainer, list_of_lists, cleaned_output_files, num_threads_preprocessing,
                                              segs_from_prev_stage)
     
-    end3 = time.time()
+    end3 = time.process_time()
     allTimes[2] = end3-start3
 
-    start4 = time.time()
+    start4 = time.process_time()
     print("starting prediction...")
     all_output_files = []
     for preprocessed in preprocessing:
@@ -292,10 +292,10 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
                                                 npz_file, None, force_separate_z, interpolation_order_z),)
                                               ))
 
-    end4 = time.time()
+    end4 = time.process_time()
     allTimes[3] = end4-start4
 
-    start5 = time.time()
+    start5 = time.process_time()
     print("inference done. Now waiting for the segmentation export to finish...")
     _ = [i.get() for i in results]
     # now apply postprocessing
@@ -322,7 +322,7 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
     pool.close()
     pool.join()
 
-    end5 = time.time()
+    end5 = time.process_time()
     allTimes[4] = end5-start5
     return allTimes
 
@@ -662,7 +662,7 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
     :return:
     """
     otherTimes = np.zeros(6)
-    startTime = time.time()
+    startTime = time.process_time()
     maybe_mkdir_p(output_folder)
     shutil_sol.copyfile(join(model, 'plans.pkl'), output_folder)
 
@@ -691,7 +691,7 @@ def predict_from_folder(model: str, input_folder: str, output_folder: str, folds
             all_in_gpu = False
         else:
             all_in_gpu = overwrite_all_in_gpu
-        endTime = time.time()
+        endTime = time.process_time()
         otherTimes[0] = endTime - startTime
 
         newTimes = predict_cases(model, list_of_lists[part_id::num_parts], output_files[part_id::num_parts], folds,
