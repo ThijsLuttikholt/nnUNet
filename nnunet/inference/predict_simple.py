@@ -141,7 +141,7 @@ def main():
         fullTimes[i,0] = fullEnd - fullStart
     
     myData = pd.DataFrame(fullTimes)
-    filePath = '/data/diag/thijsLuttikholt/nnUnet_speed_work/speed_measures.xlsx'
+    filePath = f'/data/diag/thijsLuttikholt/nnUnet_speed_work/{args.mode}_speed_measures.xlsx'
     myData.to_excel(filePath, index=False)
     
 
