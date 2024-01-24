@@ -32,6 +32,7 @@ def main():
                                                      "CASENAME_XXXX.nii.gz where XXXX is the modality "
                                                      "identifier (0000, 0001, etc)", required=True)
     parser.add_argument('-o', "--output_folder", required=True, help="folder for saving predictions")
+    parser.add_argument('-ex', "--excel_folder", required=True, help="folder for saving excel files")
     parser.add_argument('-t', '--task_name', help='task name or task ID, required.',
                         default=default_plans_identifier, required=True)
 
@@ -141,7 +142,7 @@ def main():
         fullTimes[i,0] = fullEnd - fullStart
     
     myData = pd.DataFrame(fullTimes)
-    filePath = f'/data/diag/thijsLuttikholt/nnUnet_speed_work/{args.mode}_speed_measures.xlsx'
+    filePath = f'{args.excel_folder}/{args.mode}_speed_measures.xlsx'
     myData.to_excel(filePath, index=False)
     
 
