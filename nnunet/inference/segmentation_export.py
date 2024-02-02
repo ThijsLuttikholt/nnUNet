@@ -79,6 +79,9 @@ def save_segmentation_nifti_from_softmax(segmentation_softmax: Union[str, np.nda
     current_shape = segmentation_softmax.shape
     shape_original_after_cropping = properties_dict.get('size_after_cropping')
     shape_original_before_cropping = properties_dict.get('original_size_of_raw_data')
+    print(f'The current shape is: {current_shape}')
+    print(f'The shape original after cropping is: {shape_original_after_cropping}')
+    print(f'The shape original before cropping is: {shape_original_before_cropping}')
     # current_spacing = dct.get('spacing_after_resampling')
     # original_spacing = dct.get('original_spacing')
 
