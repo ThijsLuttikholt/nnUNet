@@ -246,11 +246,14 @@ def predict_cases(model, list_of_lists, output_filenames, folds, save_npz, num_t
         if len(params) > 1:
             softmax /= len(params)
 
+        print(f'Now the shape of the original softmax: {softmax.shape}')
+
         transpose_forward = trainer.plans.get('transpose_forward')
         if transpose_forward is not None:
             transpose_backward = trainer.plans.get('transpose_backward')
             softmax = softmax.transpose([0] + [i + 1 for i in transpose_backward])
 
+        print(f'And now the shape of the softmax after transpose: {softmax.shape}')
         if save_npz:
             npz_file = output_filename[:-7] + ".npz"
         else:
